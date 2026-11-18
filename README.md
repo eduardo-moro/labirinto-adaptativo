@@ -5,9 +5,20 @@ labirinto **que ainda não foi vista** muda conforme o comportamento do jogador.
 
 Estudo Dirigido 02 — Probabilidade e Estatística (UTP, 2026/02).
 
-## Rodar
+## Instalar
+
+Requer Go 1.22+ e um terminal com cores (kitty, alacritty, gnome-terminal...). Som opcional via PulseAudio (`pacat`).
 
 ```sh
+go install github.com/eduardo-moro/labirinto-adaptativo@latest
+labirinto-adaptativo
+```
+
+ou, a partir do código:
+
+```sh
+git clone https://github.com/eduardo-moro/labirinto-adaptativo
+cd labirinto-adaptativo
 go build -o labirinto .
 ./labirinto                 # menu: Jogar / Observar algoritmo
 ./labirinto -csv partidas.csv   # salva cada partida concluída em CSV

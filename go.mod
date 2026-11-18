@@ -1,4 +1,4 @@
-module labirinto
+module github.com/eduardo-moro/labirinto-adaptativo
 
 go 1.27.3
 
