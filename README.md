@@ -5,6 +5,11 @@ labirinto **que ainda não foi vista** muda conforme o comportamento do jogador.
 
 Estudo Dirigido 02 — Probabilidade e Estatística (UTP, 2026/02).
 
+![Modo de observação: um bot joga enquanto o painel mostra a estatística em tempo real](docs/observacao.gif)
+
+<sub>Modo de observação, sem névoa: **rosa** = região regenerada após um erro · **escuro** = já visto (fixo) ·
+**azul** = caminho ideal até a saída (bandeira). Vídeo em MP4: [docs/observacao.mp4](docs/observacao.mp4).</sub>
+
 ## Instalar
 
 Requer Go 1.23+ e um terminal com cores (kitty, alacritty, gnome-terminal...). Som opcional via PulseAudio (`pacat`).
@@ -28,6 +33,11 @@ O tamanho máximo do labirinto é o tamanho da janela. **Redimensionar a janela 
 
 ### Jogar
 `←↑↓→` / `WASD` / `hjkl` movem · `m` som · `r` reinicia · `Esc` menu
+
+<img src="docs/jogar.gif" width="560" alt="Modo jogar: o jogador só enxerga alguns passos à frente">
+
+O jogador (◆) nasce no centro e só enxerga três passos pelos corredores; o resto fica sob a névoa
+e é refeito a cada erro.
 
 ### Sons
 O jogo sintetiza os tons e toca pelo PulseAudio (`pacat`); `m` liga/desliga.
@@ -53,7 +63,7 @@ O painel lateral mostra tudo em tempo real. O bot começa **desligado** (ligue c
 | `2` | Caminho ideal (BFS) |
 | `3` | Distância de cada célula até a saída (número + cor) |
 | `4` | Região mutável (células não vistas, que podem ser regeneradas) |
-| `5` | Células regeneradas no último erro (roxo, some em 5 passos) |
+| `5` | Células regeneradas no último erro (rosa, some em 5 passos) |
 | `6` | Mapa de calor de visitas |
 | `7` | Limite máximo (área da tela) |
 | `8` | Bot automático |
@@ -64,6 +74,10 @@ O painel lateral mostra tudo em tempo real. O bot começa **desligado** (ligue c
 | setas | assume o controle manual (desliga o bot) |
 
 Também é possível clicar nas opções do painel com o mouse.
+
+| Região mutável e regeneração (`4` `5`) | Distâncias BFS até a saída (`3`) |
+|---|---|
+| ![Modo de observação](docs/observacao.png) | ![Distâncias até a saída](docs/distancias.png) |
 
 ### Simulação sem interface
 
@@ -94,6 +108,16 @@ Estatísticas exibidas:
 - `q̂ = não ideais / movimentos` (frequência relativa)
 - `E[crescimentos] = Σ P(crescer)` sobre os erros (soma de esperanças de Bernoulli)
 - `E[Δd] = (1−q̂)·(−1) + q̂·Δd_erro` → negativo = o jogador se aproxima da saída em média
+
+### Resultados (labirinto máximo 34 × 21)
+
+| Bot | Partidas | Movimentos (média) | q̂ | E[Δd] | Saíram |
+|---|---|---|---|---|---|
+| Perfeito | 200 | 32,9 | 0 | −1,000 | 100% |
+| Humano (q = 0,30) | 1000 | 3643 | 0,286 | −0,134 | 100% |
+| Aleatório | 20 | ~18 900 | 0,498 | +0,003 | 20% (em 20 mil mov.) |
+
+Crescimentos observados × esperados (Σ P), bot humano: **5,61 × 5,55**, diferença 0,05 ± 0,12 (IC 95%).
 
 ## Geração
 
