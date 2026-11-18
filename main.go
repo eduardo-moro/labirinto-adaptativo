@@ -60,6 +60,9 @@ type App struct {
 	SpeedIdx int
 	P        Params
 	CSV      string
+	Sound    bool
+	Audio    *Audio
+	beeps    []time.Time
 
 	W, H       int
 	nextTick   time.Time
@@ -108,9 +111,11 @@ func main() {
 	s.HideCursor()
 
 	a := &App{
-		S: s, BotKind: BotHuman, BotQ: *q, SpeedIdx: 2, P: DefaultParams, CSV: *csvPath,
+		S: s, BotKind: BotHuman, BotQ: *q, SpeedIdx: 2, P: DefaultParams, CSV: *csvPath, Sound: true,
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
+	a.Audio = NewAudio()
+	defer a.Audio.Close()
 	a.W, a.H = s.Size()
 	a.run()
 }
@@ -128,8 +133,13 @@ func (a *App) run() {
 	}()
 	for {
 		a.draw()
+		a.flushBeeps()
 		var timer <-chan time.Time
-		if d, ok := a.nextWake(); ok {
+		d, ok := a.nextWake()
+		if bd, bok := a.nextBeep(); bok && (!ok || bd < d) {
+			d, ok = bd, true
+		}
+		if ok {
 			timer = time.After(d)
 		}
 		select {
@@ -193,7 +203,22 @@ func (a *App) botStep() {
 }
 
 func (a *App) move(d int) {
-	if a.G.Move(d) && a.G.Won {
+	g := a.G
+	ideal, grew := g.Ideal, g.Growths
+	if !g.Move(d) {
+		return
+	}
+	switch {
+	case g.Won:
+		a.sound(evWin)
+	case g.Growths > grew:
+		a.sound(evGrow)
+	case g.Ideal > ideal:
+		a.sound(evIdeal)
+	default:
+		a.sound(evError)
+	}
+	if g.Won {
 		a.wonAt = time.Now()
 		if a.CSV != "" && !a.saved {
 			mode, bot := "jogador", "-"
@@ -357,6 +382,22 @@ func (a *App) key(e *tcell.EventKey) bool {
 	}
 	if e.Key() == tcell.KeyRune && (e.Rune() == 'r' || e.Rune() == 'R') {
 		a.newGame()
+		return true
+	}
+	if e.Key() == tcell.KeyRune && (e.Rune() == 'm' || e.Rune() == 'M') {
+		a.Sound = !a.Sound
+		a.beeps = nil
+		if a.Sound {
+			if a.Audio != nil {
+				a.flash("som ligado: agudo = acerto (mais agudo perto da saída) · grave = erro · descida = cresceu · arpejo = saída")
+				a.sound(evGrow)
+			} else {
+				a.flash("som ligado (bell: 1 bipe = cresceu · 3 bipes = saída)")
+				a.beep(1)
+			}
+		} else {
+			a.flash("som desligado")
+		}
 		return true
 	}
 	if a.G == nil {

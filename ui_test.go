@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -95,5 +96,39 @@ func TestUIFlow(t *testing.T) {
 
 	if os.Getenv("DUMP") != "" {
 		os.WriteFile(os.Getenv("DUMP"), []byte(menu+"\n=====\n"+obs+"\n=====\n"+resized+"\n=====\n"+play), 0o644)
+	}
+}
+
+type countScreen struct {
+	tcell.SimulationScreen
+	n int
+}
+
+func (c *countScreen) Beep() error { c.n++; return nil }
+
+func TestBeepQueue(t *testing.T) {
+	a, s := newTestApp(t, 100, 30)
+	cs := &countScreen{SimulationScreen: s}
+	a.S = cs
+	a.Sound = true
+	a.beep(3)
+	a.beep(3) // fila limitada a 4
+	if len(a.beeps) != beepQueue {
+		t.Fatalf("fila com %d bipes", len(a.beeps))
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for len(a.beeps) > 0 && time.Now().Before(deadline) {
+		a.flushBeeps()
+		if d, ok := a.nextBeep(); ok {
+			time.Sleep(d)
+		}
+	}
+	if cs.n != beepQueue {
+		t.Fatalf("emitiu %d bipes", cs.n)
+	}
+	a.Sound = false
+	a.beep(3)
+	if len(a.beeps) != 0 {
+		t.Fatal("bipou com o som desligado")
 	}
 }

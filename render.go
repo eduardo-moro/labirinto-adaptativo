@@ -446,12 +446,12 @@ func (a *App) drawStatus() {
 	a.fill(0, y, a.W, y+1, st)
 	var s string
 	if a.Mode == ModePlay {
-		s = " ←↑↓→ / WASD mover · r reinicia · Esc menu"
+		s = " ←↑↓→ / WASD mover · m som · r reinicia · Esc menu"
 		if a.G != nil {
 			s = fmt.Sprintf(" Movimentos %d  ·%s", a.G.Moves, s)
 		}
 	} else {
-		s = " 1-9 opções · espaço pausa · n passo · b bot · [ ] q · + - velocidade · setas controle manual · r reinicia · Esc menu"
+		s = " 1-9 opções · espaço pausa · n passo · b bot · [ ] q · + - velocidade · setas controle manual · m som · r reinicia · Esc menu"
 	}
 	if time.Now().Before(a.flashUntil) {
 		s = " ⚠ " + a.flashMsg

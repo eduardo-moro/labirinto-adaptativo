@@ -16,7 +16,22 @@ go build -o labirinto .
 O tamanho máximo do labirinto é o tamanho da janela. **Redimensionar a janela reinicia o jogo.**
 
 ### Jogar
-`←↑↓→` / `WASD` / `hjkl` movem · `r` reinicia · `Esc` menu
+`←↑↓→` / `WASD` / `hjkl` movem · `m` som · `r` reinicia · `Esc` menu
+
+### Sons
+O jogo sintetiza os tons e toca pelo PulseAudio (`pacat`); `m` liga/desliga.
+
+| Evento | Som |
+|---|---|
+| movimento ideal | "sonar" curto — **mais agudo quanto mais perto da saída** (330 → 990 Hz) |
+| movimento não ideal | blip grave (196 Hz) |
+| labirinto cresceu | duas notas descendo (Sol → Dó) |
+| saída | arpejo de Dó maior subindo |
+
+No modo manual todo movimento soa (sons seguidos se sobrepõem num mixer). Com o bot
+automático, os sons de passo só tocam quando nada está soando, para não virar ruído.
+
+Sem `pacat`, cai para o bell do terminal (1 bipe = cresceu, 3 = saída).
 
 ### Observar algoritmo
 O painel lateral mostra tudo em tempo real. O bot começa **desligado** (ligue com `8`, ou jogue com as setas).
