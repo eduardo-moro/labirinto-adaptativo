@@ -120,6 +120,47 @@ func (a *App) drawMenu() {
 
 // ───────────────────────────── jogo ─────────────────────────────
 
+// mazePalette: cores usadas só no desenho do labirinto (painel, menus e
+// barra de status não mudam).
+type mazePalette struct {
+	bg, floor, wall        int32 // fundo da área do jogo, chão, paredes
+	fogFg, fogBg, bounds   int32
+	mutable, path, regen   int32
+	heat, distLo, distHi   int32
+	player, exit, onBright int32 // onBright: texto sobre jogador/saída
+	text, distText         int32
+	distFloorMix, pathMix  float64
+}
+
+var palNormal = mazePalette{
+	bg: hBg, floor: hFloor, wall: hWall,
+	fogFg: hBg1, fogBg: hBg, bounds: hBg2,
+	mutable: hMutabl, path: hBlue, regen: hPurple,
+	heat: hRedD, distLo: hGreenD, distHi: hOrangD,
+	player: hYellow, exit: hGreen, onBright: hBg,
+	text: hFg, distText: hFg,
+	distFloorMix: 0.35, pathMix: 0.8,
+}
+
+// palContrast: fundo preto, paredes brancas e cores saturadas — pensado
+// para projetor, onde tons escuros próximos viram uma coisa só.
+var palContrast = mazePalette{
+	bg: 0x000000, floor: 0x000000, wall: 0xffffff,
+	fogFg: 0x303030, fogBg: 0x000000, bounds: 0x505050,
+	mutable: 0x3d1a78, path: 0x0091ff, regen: 0xff00d4,
+	heat: 0xff1a1a, distLo: 0x00e676, distHi: 0xff6d00,
+	player: 0xffff00, exit: 0x00ff3c, onBright: 0x000000,
+	text: 0xffffff, distText: 0x000000,
+	distFloorMix: 0, pathMix: 1,
+}
+
+func (a *App) pal() *mazePalette {
+	if a.Contrast {
+		return &palContrast
+	}
+	return &palNormal
+}
+
 func (a *App) drawGame() {
 	sw, _, _, ox, oy := a.layout()
 	if a.Mode == ModeObserve {
@@ -129,6 +170,9 @@ func (a *App) drawGame() {
 		msg := "Terminal muito pequeno — aumente a janela"
 		a.text(sw+(a.W-sw-runewidth.StringWidth(msg))/2, a.H/2, sty(hRed, hBg), msg)
 	} else {
+		if a.Contrast {
+			a.fill(sw, 0, a.W, a.H-1, sty(0xffffff, palContrast.bg))
+		}
 		a.drawMaze(ox, oy)
 		if a.G.Won {
 			a.drawWin(sw)
@@ -179,14 +223,15 @@ func (a *App) visible(r, c int) bool {
 // ímpar/ímpar = célula, ímpar/par ou par/ímpar = parede, par/par = canto.
 func (a *App) tile(ctx *mazeCtx, tr, tc int) (tcell.Style, string) {
 	m := a.G.M
+	p := a.pal()
 	outside := func() (tcell.Style, string) {
 		if a.O.Bounds {
-			return sty(hBg2, hBg), "· "
+			return sty(p.bounds, p.bg), "· "
 		}
-		return sty(hBg, hBg), "  "
+		return sty(p.bg, p.bg), "  "
 	}
-	fog := func() (tcell.Style, string) { return sty(hBg1, hBg), "░░" }
-	wall := func() (tcell.Style, string) { return sty(hWall, hWall), "  " }
+	fog := func() (tcell.Style, string) { return sty(p.fogFg, p.fogBg), "░░" }
+	wall := func() (tcell.Style, string) { return sty(p.wall, p.wall), "  " }
 
 	ro, co := tr%2 == 1, tc%2 == 1
 	switch {
@@ -242,42 +287,48 @@ func (a *App) tile(ctx *mazeCtx, tr, tc int) (tcell.Style, string) {
 
 func (a *App) cellBG(ctx *mazeCtx, r, c int) int32 {
 	g := a.G
-	bg := hFloor
+	p := a.pal()
+	bg := p.floor
 	if a.O.Mutable && !g.Seen[r][c] {
-		bg = hMutabl
+		bg = p.mutable
 	}
 	if a.O.Dist && g.Dist[r][c] >= 0 && ctx.maxDist > 0 {
-		bg = mix(hGreenD, hOrangD, float64(g.Dist[r][c])/float64(ctx.maxDist))
-		bg = mix(bg, hFloor, 0.35)
+		bg = mix(p.distLo, p.distHi, float64(g.Dist[r][c])/float64(ctx.maxDist))
+		bg = mix(bg, p.floor, p.distFloorMix)
 	}
 	if a.O.Heat && g.Visits[r][c] > 0 && ctx.maxVis > 0 {
-		bg = mix(bg, hRedD, 0.25+0.65*float64(g.Visits[r][c])/float64(ctx.maxVis))
+		bg = mix(bg, p.heat, 0.25+0.65*float64(g.Visits[r][c])/float64(ctx.maxVis))
 	}
 	if a.O.Regen {
 		const fade = 5
 		if age := g.Moves - g.ChangedAt[r][c]; age >= 0 && age < fade {
-			bg = mix(bg, hPurple, 0.85*(1-float64(age)/fade))
+			bg = mix(bg, p.regen, 0.85*(1-float64(age)/fade))
 		}
 	}
 	if ctx.path != nil && ctx.path[r][c] {
-		bg = mix(bg, hBlue, 0.8)
+		bg = mix(bg, p.path, p.pathMix)
 	}
 	return bg
 }
 
 func (a *App) cellTile(ctx *mazeCtx, r, c int) (tcell.Style, string) {
 	g := a.G
+	p := a.pal()
 	if r == g.PR && c == g.PC {
-		return sty(hBg, hYellow).Bold(true), "◆ "
+		return sty(p.onBright, p.player).Bold(true), "◆ "
 	}
 	if r == g.ER && c == g.EC {
-		return sty(hBg, hGreen).Bold(true), "⚑ "
+		return sty(p.onBright, p.exit).Bold(true), "⚑ "
 	}
 	bg := a.cellBG(ctx, r, c)
 	if a.O.Dist && g.Dist[r][c] >= 0 {
-		return sty(hFg, bg), fmt.Sprintf("%2d", g.Dist[r][c]%100)
+		st := sty(p.distText, bg)
+		if a.Contrast {
+			st = st.Bold(true)
+		}
+		return st, fmt.Sprintf("%2d", g.Dist[r][c]%100)
 	}
-	return sty(hFg, bg), "  "
+	return sty(p.text, bg), "  "
 }
 
 func (a *App) passageTile(ctx *mazeCtx, r1, c1, r2, c2 int) (tcell.Style, string) {
@@ -291,7 +342,7 @@ func (a *App) passageTile(ctx *mazeCtx, r1, c1, r2, c2 int) (tcell.Style, string
 	default:
 		bg = a.cellBG(ctx, r2, c2)
 	}
-	return sty(hFg, bg), "  "
+	return sty(a.pal().text, bg), "  "
 }
 
 // ─────────────────────────── painel ───────────────────────────
@@ -446,12 +497,12 @@ func (a *App) drawStatus() {
 	a.fill(0, y, a.W, y+1, st)
 	var s string
 	if a.Mode == ModePlay {
-		s = " ←↑↓→ / WASD mover · m som · r reinicia · Esc menu"
+		s = " ←↑↓→ / WASD mover · m som · c contraste · r reinicia · Esc menu"
 		if a.G != nil {
 			s = fmt.Sprintf(" Movimentos %d  ·%s", a.G.Moves, s)
 		}
 	} else {
-		s = " 1-9 opções · espaço pausa · n passo · b bot · [ ] q · + - velocidade · setas controle manual · m som · r reinicia · Esc menu"
+		s = " 1-9 opções · espaço pausa · n passo · b bot · [ ] q · + - velocidade · setas manual · m som · c contraste · r reinicia · Esc menu"
 	}
 	if time.Now().Before(a.flashUntil) {
 		s = " ⚠ " + a.flashMsg

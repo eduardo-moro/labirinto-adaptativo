@@ -27,12 +27,16 @@ cd labirinto-adaptativo
 go build -o labirinto .
 ./labirinto                 # menu: Jogar / Observar algoritmo
 ./labirinto -csv partidas.csv   # salva cada partida concluída em CSV
+./labirinto -contraste          # já abre com o labirinto em alto contraste
 ```
 
 O tamanho máximo do labirinto é o tamanho da janela. **Redimensionar a janela reinicia o jogo.**
 
 ### Jogar
-`←↑↓→` / `WASD` / `hjkl` movem · `m` som · `r` reinicia · `Esc` menu
+`←↑↓→` / `WASD` / `hjkl` movem · `m` som · `c` alto contraste · `r` reinicia · `Esc` menu
+
+**Alto contraste (`c`, nos dois modos):** fundo preto, paredes brancas e cores saturadas no
+labirinto, para projetor. Painel, menus e barra de status não mudam.
 
 <img src="docs/jogar.gif" width="560" alt="Modo jogar: o jogador só enxerga alguns passos à frente">
 

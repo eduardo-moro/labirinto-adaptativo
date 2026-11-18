@@ -61,6 +61,7 @@ type App struct {
 	P        Params
 	CSV      string
 	Sound    bool
+	Contrast bool // paleta de alto contraste no labirinto (projetor)
 	Audio    *Audio
 	beeps    []time.Time
 
@@ -83,6 +84,7 @@ func main() {
 	cols := flag.Int("colunas", 34, "colunas do labirinto na simulação")
 	maxMoves := flag.Int("max", 200000, "limite de movimentos por partida na simulação")
 	csvPath := flag.String("csv", "", "arquivo CSV para salvar os resultados das partidas")
+	contrast := flag.Bool("contraste", false, "inicia com o labirinto em alto contraste (projetor)")
 	flag.Parse()
 
 	if *sim > 0 {
@@ -111,7 +113,7 @@ func main() {
 	s.HideCursor()
 
 	a := &App{
-		S: s, BotKind: BotHuman, BotQ: *q, SpeedIdx: 2, P: DefaultParams, CSV: *csvPath, Sound: true,
+		S: s, BotKind: BotHuman, BotQ: *q, SpeedIdx: 2, P: DefaultParams, CSV: *csvPath, Sound: true, Contrast: *contrast,
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 	a.Audio = NewAudio()
@@ -382,6 +384,15 @@ func (a *App) key(e *tcell.EventKey) bool {
 	}
 	if e.Key() == tcell.KeyRune && (e.Rune() == 'r' || e.Rune() == 'R') {
 		a.newGame()
+		return true
+	}
+	if e.Key() == tcell.KeyRune && (e.Rune() == 'c' || e.Rune() == 'C') {
+		a.Contrast = !a.Contrast
+		if a.Contrast {
+			a.flash("alto contraste ligado")
+		} else {
+			a.flash("alto contraste desligado")
+		}
 		return true
 	}
 	if e.Key() == tcell.KeyRune && (e.Rune() == 'm' || e.Rune() == 'M') {
