@@ -1,6 +1,6 @@
 module github.com/eduardo-moro/labirinto-adaptativo
 
-go 1.27.3
+go 1.23
 
 require (
 	github.com/gdamore/tcell/v2 v2.8.1

@@ -7,7 +7,7 @@ Estudo Dirigido 02 — Probabilidade e Estatística (UTP, 2026/02).
 
 ## Instalar
 
-Requer Go 1.22+ e um terminal com cores (kitty, alacritty, gnome-terminal...). Som opcional via PulseAudio (`pacat`).
+Requer Go 1.23+ e um terminal com cores (kitty, alacritty, gnome-terminal...). Som opcional via PulseAudio (`pacat`).
 
 ```sh
 go install github.com/eduardo-moro/labirinto-adaptativo@latest
